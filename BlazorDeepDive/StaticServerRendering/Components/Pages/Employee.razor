@@ -1,17 +1,20 @@
 ﻿@page "/employee"
+@using StaticServerRendering.Models
+
 <h3>Employee</h3>
 
 Employee Details are:
-@employee.Id - @employee.Name - @employee.Position
-<br />
-<!-- Explicit razor expression with at symbol along with paranthesis -->
-Employee Full Name : @(employee.Name == "John Doe" ? "Johnathan Doe" : employee.Name)
 
+<!-- Using Control Structures - Looping -->
+<ul>
+
+@foreach (var emp in employees)
+{
+                    <li>@emp.Id - @emp.Name - @emp.Position</li>
+}
+</ul>
 @code {
-    private StaticServerRendering.Models.Employee employee = new StaticServerRendering.Models.Employee
-    {
-        Id = 1,
-        Name = "John Doe",
-        Position = "Software Engineer"
-    };
+
+    // Accessing the data inside the loop through variable 'emp' and displaying the details of each employee in the list.
+    private List<Models.Employee> employees = EmployeeRepository.GetEmployees();
 }
