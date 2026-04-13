@@ -1,0 +1,17 @@
+﻿@page "/employee"
+<h3>Employee</h3>
+
+Employee Details are:
+@employee.Id - @employee.Name - @employee.Position
+<br />
+<!-- Explicit razor expression with at symbol along with paranthesis -->
+Employee Full Name : @(employee.Name == "John Doe" ? "Johnathan Doe" : employee.Name)
+
+@code {
+    private StaticServerRendering.Models.Employee employee = new StaticServerRendering.Models.Employee
+    {
+        Id = 1,
+        Name = "John Doe",
+        Position = "Software Engineer"
+    };
+}

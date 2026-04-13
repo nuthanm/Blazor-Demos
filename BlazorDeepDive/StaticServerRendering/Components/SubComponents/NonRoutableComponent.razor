@@ -1,0 +1,9 @@
+﻿
+<h3>Non Routable Components</h3>
+
+<!-- Implicit way of accessing the C# variables inside the html -->
+<p>@message</p>
+
+@code {
+    private string message = "This is a non-routable component. It cannot be accessed directly via URL, but can be used within other components.";
+}

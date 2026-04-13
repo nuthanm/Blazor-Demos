@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="AutoInteractivity/AutoInteractivity.Client/AutoInteractivity.Client.csproj" />
+  <Project Path="AutoInteractivity/AutoInteractivity/AutoInteractivity.csproj" />
+  <Project Path="ServerInteractivity/ServerInteractivity.csproj" />
+  <Project Path="StaticServerRendering/StaticServerRendering.csproj" />
+  <Project Path="WebAssemblyInteractivity/WebAssemblyInteractivity.Client/WebAssemblyInteractivity.Client.csproj" />
+  <Project Path="WebAssemblyInteractivity/WebAssemblyInteractivity/WebAssemblyInteractivity.csproj" />
+</Solution>
