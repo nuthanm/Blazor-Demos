@@ -1,0 +1,45 @@
+@using ServerInteractivity.Components.Transportation
+
+@*
+    Web Forms equivalent (ContactInformation.ascx):
+        <asp:Panel runat="server" ID="pnlContact">
+            <asp:Label Text="Contact Information" runat="server" />
+            <asp:TextBox ID="txtName"  runat="server" />
+            <asp:TextBox ID="txtEmail" runat="server" />
+            <asp:TextBox ID="txtPhone" runat="server" />
+        </asp:Panel>
+        // Code-behind: txtName.Enabled = (Role == "Admin");
+*@
+
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Contact Information</span>
+        <span class="badge @(IsAdmin ? "bg-success" : "bg-secondary")">
+            @(IsAdmin ? "Admin (editable)" : "Read-only")
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Name</label>
+                @* asp:TextBox + Enabled binding *@
+                <input class="form-control" @bind="Contact.Name" disabled="@(!IsAdmin)" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" @bind="Contact.Email" disabled="@(!IsAdmin)" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Phone</label>
+                <input class="form-control" @bind="Contact.Phone" disabled="@(!IsAdmin)" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ContactInfo Contact { get; set; } = new();
+
+    [Parameter] public bool IsAdmin { get; set; }
+}

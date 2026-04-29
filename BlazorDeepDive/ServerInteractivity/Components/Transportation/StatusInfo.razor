@@ -1,0 +1,183 @@
+@using ServerInteractivity.Components.Transportation
+
+@*
+    Web Forms equivalent (StatusInfo.ascx):
+        <asp:Panel runat="server" ID="pnlStatus">
+            <asp:Label ID="lblTitle" Text="Status" runat="server" />
+            <asp:Label ID="lblPrefix" Text="Current status:" runat="server" />
+            <asp:LinkButton ID="lnkStatus" runat="server"
+                            OnClick="lnkStatus_Click"
+                            Text='<%# Eval("Status") %>' />
+        </asp:Panel>
+        <asp:Panel runat="server" ID="pnlPopup" Visible="false">
+            ... grid + close button ...
+        </asp:Panel>
+*@
+
+<div class="card mb-3">
+    @* asp:Label *@
+    <div class="card-header">Status</div>
+    <div class="card-body">
+        <div class="row align-items-center g-3">
+            @* Column 1 - Current status (label + LinkButton) *@
+            <div class="col-12 col-md-4 d-flex align-items-center">
+                <span class="fw-semibold me-2">Current status:</span>
+                <button type="button"
+                        class="btn btn-link p-0 fw-bold @StatusCssClass"
+                        @onclick="OpenPopupAsync">
+                    @Status
+                </button>
+            </div>
+
+            @* Column 2 - Last Updated By *@
+            <div class="col-12 col-md-4 d-flex align-items-center">
+                <span class="fw-semibold me-2">Last Updated By:</span>
+                <span>@LastUpdatedBy</span>
+            </div>
+
+            @* Column 3 - Last Updated On *@
+            <div class="col-12 col-md-4 d-flex align-items-center">
+                <span class="fw-semibold me-2">Last Updated On:</span>
+                <span>@(LastUpdatedOn?.ToString("dd-MM-yyyy HH:mm:ss"))</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* asp:Panel Visible="false" -> @if (_isPopupOpen) *@
+
+@if (_isPopupOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@Status — details</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="ClosePopup"></button>
+                </div>
+                <div class="modal-body">
+                    @if (_isLoading)
+                    {
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                            <span>Loading @Status details...</span>
+                        </div>
+                    }
+                    else if (_history.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No history available for this status.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Changed By</th>
+                                    <th>Changed On</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in _history)
+                                {
+                                    <tr>
+                                        <td><span class="badge @GetBadgeClass(entry.Status)">@entry.Status</span></td>
+                                        <td>@entry.ChangedBy</td>
+                                        <td>@entry.ChangedOn.ToString("g")</td>
+                                        <td>@entry.Notes</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="ClosePopup">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+
+@code {
+[Parameter, EditorRequired]
+public TransportationStatus Status { get; set; }
+
+[Parameter] public string? LastUpdatedBy { get; set; }
+[Parameter] public DateTime? LastUpdatedOn { get; set; }
+
+// When supplied, the click bubbles to the parent (e.g. to bind a section)
+// and the built-in details popup is skipped.
+[Parameter] public EventCallback<TransportationStatus> OnStatusClick { get; set; }
+
+[Parameter]
+public Func<TransportationStatus, Task<IReadOnlyList<StatusHistoryEntry>>>? LoadHistoryAsync { get; set; }
+
+private bool _isPopupOpen;
+private bool _isLoading;
+private IReadOnlyList<StatusHistoryEntry> _history = Array.Empty<StatusHistoryEntry>();
+
+private string StatusCssClass => Status switch
+{
+    TransportationStatus.Saved => "text-secondary",
+    TransportationStatus.Submitted => "text-primary",
+    TransportationStatus.Returned => "text-warning",
+    TransportationStatus.Approved => "text-success",
+    _ => string.Empty
+};
+
+private static string GetBadgeClass(TransportationStatus status) => status switch
+{
+    TransportationStatus.Saved => "bg-secondary",
+    TransportationStatus.Submitted => "bg-primary",
+    TransportationStatus.Returned => "bg-warning text-dark",
+    TransportationStatus.Approved => "bg-success",
+    _ => "bg-light text-dark"
+};
+
+private async Task HandleStatusClickAsync()
+{
+    // If parent wants the click, bubble it and skip the built-in popup.
+    if (OnStatusClick.HasDelegate)
+    {
+        await OnStatusClick.InvokeAsync(Status);
+        return;
+    }
+
+    await OpenPopupAsync();
+}
+
+private async Task OpenPopupAsync()
+    {
+        _isPopupOpen = true;
+        _isLoading = true;
+        _history = Array.Empty<StatusHistoryEntry>();
+
+        if (LoadHistoryAsync is not null)
+        {
+            _history = await LoadHistoryAsync(Status);
+        }
+        else
+        {
+            // Fallback demo data so the popup still has something to show.
+            await Task.Delay(300);
+            _history = new[]
+            {
+                new StatusHistoryEntry
+                {
+                    Status = Status,
+                    ChangedBy = "system",
+                    ChangedOn = DateTime.Now,
+                    Notes = $"Status changed to {Status}."
+                }
+            };
+        }
+
+        _isLoading = false;
+    }
+
+    private void ClosePopup() => _isPopupOpen = false;
+}

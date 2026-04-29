@@ -1,0 +1,126 @@
+@using ServerInteractivity.Components.Transportation
+
+@*
+    Web Forms equivalent (EventHistory.ascx):
+        <asp:Panel runat="server" ID="pnlEvents">
+            <asp:Label ID="lblTitle" Text="Events History" runat="server" />
+            <asp:GridView ID="gvEvents" runat="server"
+                          OnRowDataBound="gvEvents_RowDataBound"
+                          OnRowCommand="gvEvents_RowCommand">
+                <Columns>
+                    <asp:TemplateField>
+                        <ItemTemplate>
+                            <asp:LinkButton runat="server" CommandName="EditRow"
+                                            CommandArgument='<%# Eval("Id") %>'>Edit</asp:LinkButton>
+                            <asp:LinkButton runat="server" CommandName="RemoveRow"
+                                            CommandArgument='<%# Eval("Id") %>'>Remove</asp:LinkButton>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                </Columns>
+            </asp:GridView>
+        </asp:Panel>
+*@
+
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>@Title</span>
+        @* asp:Button equivalent (only when actions are enabled) *@
+        @if (ShowActions)
+        {
+            <button type="button" class="btn btn-sm btn-primary" @onclick="OnAddAsync">
+                Add Event
+            </button>
+        }
+    </div>
+    <div class="card-body p-0">
+        @if (Events is null || Events.Count == 0)
+        {
+            @* asp:Label / Literal equivalent *@
+            <p class="text-muted m-3">No events to display.</p>
+        }
+        else
+        {
+            @* asp:GridView equivalent *@
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        @if (ShowActions)
+                        {
+                            <th class="text-end">Actions</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ev in Events)
+                    {
+                        @* class binding here replaces OnRowDataBound *@
+                        <tr class="@GetRowCss(ev)">
+                            <td>@ev.Id</td>
+                            <td>@ev.Title</td>
+                            <td>@ev.EventDate.ToString("g")</td>
+                            <td>@ev.Location</td>
+                            <td><span class="badge @GetBadgeClass(ev.Status)">@ev.Status</span></td>
+                            @if (ShowActions)
+                            {
+                                <td class="text-end">
+                                    @* asp:LinkButton CommandName="EditRow" *@
+                                    <button type="button" class="btn btn-link p-0 me-3"
+                                            @onclick="() => EditAsync(ev)">
+                                        Edit
+                                    </button>
+                                    @* asp:LinkButton CommandName="RemoveRow" *@
+                                    <button type="button" class="btn btn-link p-0 text-danger"
+                                            @onclick="() => RemoveAsync(ev)">
+                                        Remove
+                                    </button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    // asp:Label Text="..." -> [Parameter] string Title
+    [Parameter] public string Title { get; set; } = "Events History";
+
+    // GridView DataSource -> [Parameter] collection
+    [Parameter] public IReadOnlyList<TransportationEvent>? Events { get; set; }
+
+    // Hides the Add button and Edit/Remove column when false (read-only grid).
+    [Parameter] public bool ShowActions { get; set; } = true;
+
+    // OnClick / OnRowCommand bubbled up via EventCallback<T> (replaces server-side event bubbling)
+    [Parameter] public EventCallback OnAdd { get; set; }
+    [Parameter] public EventCallback<TransportationEvent> OnEditEvent { get; set; }
+    [Parameter] public EventCallback<TransportationEvent> OnRemoveEvent { get; set; }
+
+    private Task OnAddAsync() => OnAdd.InvokeAsync();
+    private Task EditAsync(TransportationEvent row) => OnEditEvent.InvokeAsync(row);
+    private Task RemoveAsync(TransportationEvent row) => OnRemoveEvent.InvokeAsync(row);
+
+    // OnRowDataBound replacement: derive a CSS class per row from its data.
+    private static string GetRowCss(TransportationEvent row) => row.Status switch
+    {
+        TransportationStatus.Returned => "table-warning",
+        TransportationStatus.Approved => "table-success",
+        _ => string.Empty
+    };
+
+    private static string GetBadgeClass(TransportationStatus status) => status switch
+    {
+        TransportationStatus.Saved => "bg-secondary",
+        TransportationStatus.Submitted => "bg-primary",
+        TransportationStatus.Returned => "bg-warning text-dark",
+        TransportationStatus.Approved => "bg-success",
+        _ => "bg-light text-dark"
+    };
+}

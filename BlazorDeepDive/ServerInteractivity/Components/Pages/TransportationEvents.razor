@@ -1,0 +1,257 @@
+@page "/transportation/events"
+@rendermode InteractiveServer
+@using ServerInteractivity.Components.Transportation
+
+<PageTitle>Transportation Events</PageTitle>
+
+<h1 class="mb-3">Transportation Events</h1>
+
+@* Demo-only role toggle so you can see Admin vs non-Admin behaviour for the contact form. *@
+<div class="form-check form-switch mb-3">
+    <input class="form-check-input" type="checkbox" id="adminToggle"
+           checked="@(_role == UserRole.Admin)"
+           @onchange="ToggleRole" />
+    <label class="form-check-label" for="adminToggle">
+        Run as <strong>@_role</strong> (toggle to switch role)
+    </label>
+</div>
+
+@if (_isLoading)
+{
+    <div class="d-flex align-items-center gap-2">
+        <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+        <span>Loading transportation data...</span>
+    </div>
+}
+else
+{
+    @* ============== PANEL 1 ============== *@
+    <div class="card border-primary mb-4">
+        <div class="card-header bg-primary text-white">Panel 1</div>
+        <div class="card-body">
+            <StatusInfo Status="_panel1Status"
+                        LastUpdatedBy="@_panel1UpdatedBy"
+                        LastUpdatedOn="_panel1UpdatedOn"
+                        OnStatusClick="ShowMessagesAsync" />
+
+            @* Hidden until the StatusInfo link is clicked. *@
+            @if (_showMessages)
+            {
+                <MessageContactHistory Messages="_messages"
+                                       OnAdd="AddMessageAsync"
+                                       OnEditMessage="EditMessageAsync"
+                                       OnRemoveMessage="RemoveMessageAsync" />
+            }
+
+            <ContactInformation Contact="_contact" IsAdmin="@(_role == UserRole.Admin)" />
+
+            <AnnouncementsSection Items="_announcements"
+                                  OnAdd="AddAnnouncementAsync"
+                                  OnUpdate="UpdateAnnouncementAsync"
+                                  OnRemove="RemoveAnnouncementAsync" />
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-success" @onclick="() => SubmitAsync(1)">Send to Approval</button>
+                <button type="button" class="btn btn-primary" @onclick="() => SaveAsync(1)">Save</button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="() => CancelAsync(1)">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    @* ============== PANEL 2 ============== *@
+    <div class="card border-success mb-4">
+        <div class="card-header bg-success text-white">Panel 2</div>
+        <div class="card-body">
+            <StatusInfo Status="_panel2Status"
+                        LastUpdatedBy="@_panel2UpdatedBy"
+                        LastUpdatedOn="_panel2UpdatedOn"
+                        OnStatusClick="ShowEventsAsync" />
+
+            @if (_showEvents)
+            {
+                @* Read-only grid: no Edit/Remove links, no Add button. *@
+                <EventsHistory Events="_events" ShowActions="false" />
+            }
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-success" @onclick="() => SubmitAsync(2)">Send to Approval</button>
+                <button type="button" class="btn btn-primary" @onclick="() => SaveAsync(2)">Save</button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="() => CancelAsync(2)">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_lastAction))
+    {
+        <div class="alert alert-info">@_lastAction</div>
+    }
+}
+
+@code {
+    private bool _isLoading = true;
+
+    // Role - in a real app this comes from authentication / claims.
+    private UserRole _role = UserRole.Admin;
+
+    // Panel 1 state
+    private TransportationStatus _panel1Status = TransportationStatus.Returned;
+    private string _panel1UpdatedBy = "manager";
+    private DateTime _panel1UpdatedOn = DateTime.Now.AddDays(-2);
+    private bool _showMessages;
+    private ContactInfo _contact = new();
+    private List<Announcement> _announcements = new();
+    private IReadOnlyList<MessageContact> _messages = Array.Empty<MessageContact>();
+
+    // Panel 2 state
+    private TransportationStatus _panel2Status = TransportationStatus.Submitted;
+    private string _panel2UpdatedBy = "nuthan";
+    private DateTime _panel2UpdatedOn = DateTime.Now.AddDays(-1);
+    private bool _showEvents = true; // Panel 2 grid is visible by default (read-only).
+    private IReadOnlyList<TransportationEvent> _events = Array.Empty<TransportationEvent>();
+
+    private string? _lastAction;
+    private int _nextAnnouncementId = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate fetching pre-populated data on page load.
+        await Task.Delay(250);
+
+        _contact = new ContactInfo
+        {
+            Name = "John Doe",
+            Email = "john.doe@example.com",
+            Phone = "+91-99999-99999"
+        };
+
+        _announcements = new List<Announcement>
+        {
+            new() { Id = _nextAnnouncementId++, Text = "Driver briefing at 9:00 AM",   Date = DateTime.Today.AddDays(-1) },
+            new() { Id = _nextAnnouncementId++, Text = "Route 14 maintenance window", Date = DateTime.Today }
+        };
+
+        _events = new[]
+        {
+            new TransportationEvent { Id = 101, Title = "Fleet pickup - Warehouse A", EventDate = DateTime.Now.AddDays(-3), Location = "Hyderabad", Status = TransportationStatus.Approved },
+            new TransportationEvent { Id = 102, Title = "Driver swap - Route 14",      EventDate = DateTime.Now.AddDays(-1), Location = "Bangalore", Status = TransportationStatus.Submitted },
+            new TransportationEvent { Id = 103, Title = "Maintenance check",            EventDate = DateTime.Now,             Location = "Chennai",   Status = TransportationStatus.Returned },
+            new TransportationEvent { Id = 104, Title = "New shipment scheduling",      EventDate = DateTime.Now.AddDays(2),  Location = "Mumbai",    Status = TransportationStatus.Saved }
+        };
+
+        _messages = new[]
+        {
+            new MessageContact { Id = 1, ContactName = "Asha K.", Channel = "Email", Message = "Pickup confirmation for Warehouse A.",  SentOn = DateTime.Now.AddDays(-3).AddHours(2) },
+            new MessageContact { Id = 2, ContactName = "Ravi T.", Channel = "SMS",   Message = "Driver assignment updated for Route 14.", SentOn = DateTime.Now.AddDays(-1).AddHours(-4) },
+            new MessageContact { Id = 3, ContactName = "Support", Channel = "Phone", Message = "Customer requested change of slot.",     SentOn = DateTime.Now.AddHours(-6) }
+        };
+
+        _isLoading = false;
+    }
+
+    private void ToggleRole(ChangeEventArgs e)
+    {
+        var on = e.Value is bool b && b;
+        _role = on ? UserRole.Admin : UserRole.Viewer;
+    }
+
+    // ---- StatusInfo click handlers (toggle visibility per the requirement) ----
+    private Task ShowMessagesAsync(TransportationStatus _)
+    {
+        _showMessages = !_showMessages;
+        _lastAction = _showMessages ? "Loaded Message & Contact History." : "Hid Message & Contact History.";
+        return Task.CompletedTask;
+    }
+
+    private Task ShowEventsAsync(TransportationStatus _)
+    {
+        _showEvents = !_showEvents;
+        _lastAction = _showEvents ? "Loaded Events History." : "Hid Events History.";
+        return Task.CompletedTask;
+    }
+
+    // ---- Announcements - Add / Update / Remove (Oracle persistence stubbed) ----
+    private async Task AddAnnouncementAsync(Announcement draft)
+    {
+        var saved = new Announcement
+        {
+            Id = _nextAnnouncementId++,
+            Text = draft.Text,
+            Date = draft.Date
+        };
+
+        // TODO: replace with Oracle INSERT, e.g.
+        // await AnnouncementRepo.InsertAsync(saved);
+        await Task.Delay(50);
+
+        _announcements.Add(saved);
+        _lastAction = $"Saved announcement #{saved.Id} to database.";
+    }
+
+    private async Task UpdateAnnouncementAsync(Announcement draft)
+    {
+        var existing = _announcements.FirstOrDefault(x => x.Id == draft.Id);
+        if (existing is null) { return; }
+
+        existing.Text = draft.Text;
+        existing.Date = draft.Date;
+
+        // TODO: replace with Oracle UPDATE, e.g.
+        // await AnnouncementRepo.UpdateAsync(existing);
+        await Task.Delay(50);
+
+        _lastAction = $"Updated announcement #{existing.Id} in database.";
+    }
+
+    private async Task RemoveAnnouncementAsync(Announcement a)
+    {
+        // TODO: replace with Oracle DELETE, e.g.
+        // await AnnouncementRepo.DeleteAsync(a.Id);
+        await Task.Delay(50);
+
+        _announcements.RemoveAll(x => x.Id == a.Id);
+        _lastAction = $"Removed announcement #{a.Id} from database.";
+    }
+
+    // ---- Messages (Panel 1 history grid) ----
+    private Task AddMessageAsync()
+    {
+        _lastAction = "New Message clicked.";
+        return Task.CompletedTask;
+    }
+
+    private Task EditMessageAsync(MessageContact row)
+    {
+        _lastAction = $"Edit message #{row.Id} from {row.ContactName}.";
+        return Task.CompletedTask;
+    }
+
+    private Task RemoveMessageAsync(MessageContact row)
+    {
+        _messages = _messages.Where(m => m.Id != row.Id).ToList();
+        _lastAction = $"Removed message #{row.Id}.";
+        return Task.CompletedTask;
+    }
+
+    // ---- Panel-level action buttons ----
+    private Task SubmitAsync(int panel)
+    {
+        if (panel == 1) { _panel1Status = TransportationStatus.Submitted; _panel1UpdatedBy = _role.ToString(); _panel1UpdatedOn = DateTime.Now; }
+        else            { _panel2Status = TransportationStatus.Submitted; _panel2UpdatedBy = _role.ToString(); _panel2UpdatedOn = DateTime.Now; }
+        _lastAction = $"Panel {panel} sent to approval.";
+        return Task.CompletedTask;
+    }
+
+    private Task SaveAsync(int panel)
+    {
+        if (panel == 1) { _panel1Status = TransportationStatus.Saved; _panel1UpdatedBy = _role.ToString(); _panel1UpdatedOn = DateTime.Now; }
+        else            { _panel2Status = TransportationStatus.Saved; _panel2UpdatedBy = _role.ToString(); _panel2UpdatedOn = DateTime.Now; }
+        _lastAction = $"Panel {panel} saved.";
+        return Task.CompletedTask;
+    }
+
+    private Task CancelAsync(int panel)
+    {
+        _lastAction = $"Panel {panel} cancelled.";
+        return Task.CompletedTask;
+    }
+}

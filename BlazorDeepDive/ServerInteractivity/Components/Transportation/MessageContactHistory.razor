@@ -1,0 +1,98 @@
+@using ServerInteractivity.Components.Transportation
+
+@*
+    Web Forms equivalent (MessageContactHistory.ascx):
+        <asp:Panel runat="server" ID="pnlMessages">
+            <asp:Label ID="lblTitle" Text="Message & Contact History" runat="server" />
+            <asp:GridView ID="gvMessages" runat="server"
+                          OnRowDataBound="gvMessages_RowDataBound"
+                          OnRowCommand="gvMessages_RowCommand">
+                <Columns>
+                    <asp:TemplateField>
+                        <ItemTemplate>
+                            <asp:LinkButton runat="server" CommandName="EditRow"
+                                            CommandArgument='<%# Eval("Id") %>'>Edit</asp:LinkButton>
+                            <asp:LinkButton runat="server" CommandName="RemoveRow"
+                                            CommandArgument='<%# Eval("Id") %>'>Remove</asp:LinkButton>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                </Columns>
+            </asp:GridView>
+        </asp:Panel>
+*@
+
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>@Title</span>
+        @* asp:Button equivalent *@
+        <button type="button" class="btn btn-sm btn-primary" @onclick="OnAddAsync">
+            New Message
+        </button>
+    </div>
+    <div class="card-body p-0">
+        @if (Messages is null || Messages.Count == 0)
+        {
+            <p class="text-muted m-3">No messages to display.</p>
+        }
+        else
+        {
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Contact</th>
+                        <th>Channel</th>
+                        <th>Message</th>
+                        <th>Sent On</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Messages)
+                    {
+                        @* OnRowDataBound replacement *@
+                        <tr class="@GetRowCss(m)">
+                            <td>@m.Id</td>
+                            <td>@m.ContactName</td>
+                            <td>@m.Channel</td>
+                            <td>@m.Message</td>
+                            <td>@m.SentOn.ToString("g")</td>
+                            <td class="text-end">
+                                @* asp:LinkButton CommandName="EditRow" *@
+                                <button type="button" class="btn btn-link p-0 me-3"
+                                        @onclick="() => EditAsync(m)">
+                                    Edit
+                                </button>
+                                @* asp:LinkButton CommandName="RemoveRow" *@
+                                <button type="button" class="btn btn-link p-0 text-danger"
+                                        @onclick="() => RemoveAsync(m)">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Message & Contact History";
+
+    [Parameter] public IReadOnlyList<MessageContact>? Messages { get; set; }
+
+    [Parameter] public EventCallback OnAdd { get; set; }
+    [Parameter] public EventCallback<MessageContact> OnEditMessage { get; set; }
+    [Parameter] public EventCallback<MessageContact> OnRemoveMessage { get; set; }
+
+    private Task OnAddAsync() => OnAdd.InvokeAsync();
+    private Task EditAsync(MessageContact row) => OnEditMessage.InvokeAsync(row);
+    private Task RemoveAsync(MessageContact row) => OnRemoveMessage.InvokeAsync(row);
+
+    // OnRowDataBound: highlight phone-channel rows.
+    private static string GetRowCss(MessageContact row) =>
+        string.Equals(row.Channel, "Phone", StringComparison.OrdinalIgnoreCase)
+            ? "table-info"
+            : string.Empty;
+}

@@ -1,0 +1,359 @@
+# Scenario 1 – Convert the Left Sidebar Navigation into a Top Navigation Bar with Submenus
+
+> Project used in this scenario: `ServerInteractivity`
+> Goal: Move Blazor's default **left-side** navigation to the **top** of every page, and add a **dropdown submenu** for the **Transportation** module (with `Events` as the first child item).
+> Audience: A complete Blazor beginner. Follow each step in order and you will be able to repeat this on any Blazor (Server / WebAssembly / Auto / Static SSR) project.
+
+---
+
+## 1. What we are building
+
+Before:
+
+```
++-------------------------------------------------------+
+| Sidebar |                                             |
+|  Home   |                                             |
+| Counter |          Page Body (@Body)                  |
+| Weather |                                             |
++-------------------------------------------------------+
+```
+
+After:
+
+```
++-------------------------------------------------------+
+|  Brand   Home ?   Counter ?   Weather ?   Transport ? |   <-- top nav
++-------------------------------------------------------+
+|                                                       |
+|                  Page Body (@Body)                    |
+|                                                       |
++-------------------------------------------------------+
+```
+
+Each top item opens a **dropdown** with its child links (e.g. Transportation ? Events).
+
+---
+
+## 2. Files involved
+
+In a default Blazor template the layout/navigation lives here:
+
+| File | Role |
+|------|------|
+| `Components/Layout/MainLayout.razor` | The page shell. Hosts the navigation and the `@Body` placeholder. |
+| `Components/Layout/MainLayout.razor.css` | Scoped styles for the shell (sidebar/topbar look & feel). |
+| `Components/Layout/NavMenu.razor` | The actual menu markup (links, brand, dropdowns). |
+| `Components/Layout/NavMenu.razor.css` | Scoped styles for the menu (colors, icons, hover, dropdown). |
+
+> The `.razor.css` files are **CSS isolation** files. Styles inside them only apply to the matching `.razor` component. To pierce into child components from a parent stylesheet, Blazor uses the special `::deep` selector (you will see this in `NavMenu.razor.css`).
+
+---
+
+## 3. Prerequisite: Bootstrap 5 must be referenced
+
+The dropdowns use **Bootstrap 5**'s `data-bs-toggle="dropdown"`. The default Blazor template already references Bootstrap in `wwwroot/lib/bootstrap` and the JS bundle is loaded in `App.razor` (or `index.html` for WASM). If dropdowns do not open when clicked, this is the first thing to check.
+
+Make sure these two are present somewhere in the host page:
+
+```html
+<link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+<script src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+```
+
+---
+
+## 4. Step-by-step
+
+### Step 4.1 – Change `MainLayout.razor` from "sidebar + main" to "header + main"
+
+The default template renders the `NavMenu` inside a `<div class="sidebar">`. We move it into a `<header>` so it sits on top of the page.
+
+`Components/Layout/MainLayout.razor`:
+
+```razor
+@inherits LayoutComponentBase
+
+<div class="page">
+    <header>
+        <NavMenu />
+    </header>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">??</span>
+</div>
+```
+
+Key change: the outer `.page` is now a vertical **flex column** (header on top, main below). No sidebar.
+
+### Step 4.2 – Update `MainLayout.razor.css` to drop the sidebar layout
+
+Replace the flex-row layout (which placed the sidebar on the left) with a simple flex-column:
+
+```css
+.page {
+    position: relative;
+    display: flex;
+    flex-direction: column;   /* <-- column, not row */
+}
+
+main {
+    flex: 1;
+}
+```
+
+You can delete or ignore the `.sidebar` rules — nothing references that class anymore.
+
+### Step 4.3 – Rewrite `NavMenu.razor` as a Bootstrap **navbar** with **dropdowns**
+
+This is the heart of the scenario. We use Bootstrap's `navbar` + `nav-item dropdown` pattern. Each top-level menu item is a `<li class="nav-item dropdown">` containing:
+
+1. A **toggle anchor** with `class="nav-link dropdown-toggle"` and `data-bs-toggle="dropdown"`.
+2. A `<ul class="dropdown-menu">` containing one `<li>` per child link.
+3. Child links use Blazor's `<NavLink>` so the active route is highlighted automatically.
+
+```razor
+<nav class="navbar navbar-expand-md navbar-dark top-navbar">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">ServerInteractivity</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#mainNav" aria-controls="mainNav"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+
+                <!-- Transportation dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="transportationDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Transportation
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="transportationDropdown">
+                        <li>
+                            <NavLink class="dropdown-item" href="transportation/events">
+                                Events
+                            </NavLink>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+```
+
+> The full file in this repo also has dropdowns for Home, Counter and Weather. The structure for every menu is identical — copy-paste the `<li class="nav-item dropdown">…</li>` block and rename ids/labels.
+
+### Step 4.4 – Update `NavMenu.razor.css` for a horizontal dark bar
+
+Replace the old vertical sidebar styles with a horizontal gradient bar. The important bits:
+
+```css
+.top-navbar {
+    background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    min-height: 3.5rem;
+}
+
+.navbar-nav ::deep .nav-link        { color: #d7d7d7; }
+.navbar-nav ::deep .nav-link:hover,
+.navbar-nav ::deep .nav-link:focus  { color: #ffffff; }
+
+.dropdown-menu ::deep a.active {
+    background-color: rgba(5, 39, 103, 0.1);
+    color: #052767;
+    font-weight: 600;
+}
+```
+
+Why `::deep`? Because `<NavLink>` renders an `<a>` **inside a child component**, and CSS isolation would normally not reach it. `::deep` tells Blazor "let this rule cross into rendered children".
+
+### Step 4.5 – Run the project
+
+```
+dotnet run --project ServerInteractivity
+```
+
+You should see the dark gradient bar at the top, with **Home**, **Counter**, **Weather**, **Transportation** items, each opening a dropdown on click.
+
+---
+
+## 5. How to add a **NEW MAIN MENU** (top-level item)
+
+Open `Components/Layout/NavMenu.razor` and add **one more** `<li class="nav-item dropdown">` block inside `<ul class="navbar-nav …">`.
+
+Checklist when adding a new main menu:
+
+1. **Unique `id`** on the toggle anchor (e.g. `id="reportsDropdown"`).
+2. **Matching `aria-labelledby`** on the `<ul class="dropdown-menu">` (must equal that id).
+3. **Label text** (e.g. "Reports") and an optional **icon span** (`<span class="bi bi-…-nav-menu">`).
+4. At least one child `<NavLink>` inside the dropdown — a top-level item with no children looks broken to the user.
+5. If you want the item itself to be clickable (not just the dropdown), make the first child link the "Overview" page.
+
+Template:
+
+```razor
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown"
+       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Reports
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+        <li>
+            <NavLink class="dropdown-item" href="reports">
+                Overview
+            </NavLink>
+        </li>
+        <li>
+            <NavLink class="dropdown-item" href="reports/monthly">
+                Monthly
+            </NavLink>
+        </li>
+    </ul>
+</li>
+```
+
+### 5.1 Variation – a **main menu WITHOUT a dropdown** (single direct link)
+
+Sometimes a top-level item should just navigate straight to a page (no children, no dropdown arrow). Example already in this project:
+
+```razor
+<li class="nav-item">
+    <NavLink class="nav-link" href="weather/no-dropdown">
+        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather Without Dropdown
+    </NavLink>
+</li>
+```
+
+Differences vs. a dropdown menu:
+
+| Concern | Dropdown menu | Plain link menu |
+|---------|---------------|-----------------|
+| Outer `<li>` class | `nav-item dropdown` | `nav-item` (no `dropdown`) |
+| Toggle element | `<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">` | `<NavLink class="nav-link" href="…">` |
+| Caret arrow (?) | Yes (added by `dropdown-toggle`) | No |
+| Children `<ul class="dropdown-menu">` | Required | Must NOT be present |
+| `id` / `aria-labelledby` | Required pair | Not needed |
+| Active highlight | Bootstrap on the `<a>`, `::deep a.active` on children | Handled automatically by `<NavLink>` |
+
+**Common mistake** (which appears in the current `NavMenu.razor`):
+
+```razor
+<!-- ? Wrong: it's a single link but still has data-bs-toggle="dropdown" -->
+<li class="nav-item">
+    <a class="nav-link" href="#" id="weather"
+       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Weather Without Dropdown
+    </a>
+</li>
+```
+
+Why this is wrong:
+
+1. `data-bs-toggle="dropdown"` tells Bootstrap "I am a dropdown trigger", but there is no `<ul class="dropdown-menu">` after it ? clicking does nothing visible.
+2. `href="#"` does not navigate anywhere and reloads to top of page.
+3. `id="weather"` collides with possible future weather elements; for a plain link no id is needed.
+4. There is no `<NavLink>`, so the active-link highlight never lights up.
+
+**Correct pattern** (use this when you want a single, direct link in the top bar):
+
+```razor
+<li class="nav-item">
+    <NavLink class="nav-link" href="weather/no-dropdown">
+        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather Without Dropdown
+    </NavLink>
+</li>
+```
+
+Checklist for a **no-dropdown** main menu:
+
+1. `<li class="nav-item">` — no `dropdown` keyword.
+2. Use `<NavLink class="nav-link" href="route">` — not a plain `<a href="#">`.
+3. Do **not** add `data-bs-toggle`, `dropdown-toggle`, `aria-expanded`, or `aria-labelledby`.
+4. The `href` must point to a real `@page "/route"` — otherwise the link 404s.
+5. Optional: add an icon `<span class="bi bi-…-nav-menu">` for visual consistency with the dropdown items.
+
+---
+
+## 6. How to add a **NEW SUBMENU ITEM** under an existing main menu
+
+Find the matching `<ul class="dropdown-menu">` (e.g. the one labelled by `transportationDropdown`) and add a new `<li>` inside it.
+
+Checklist when adding a new submenu item:
+
+1. The child must be a `<NavLink class="dropdown-item" href="…">`. Use `dropdown-item` so it picks up Bootstrap's dropdown styling.
+2. The `href` value must match a route that **really exists** — i.e. some `.razor` page has `@page "/that/path"`. Example:
+   - File: `Components/Pages/TransportationEvents.razor`
+   - Top of file: `@page "/transportation/events"`
+   - Link: `<NavLink ... href="transportation/events">Events</NavLink>`
+3. If the link is the "home" of a section (e.g. `href=""` for the dashboard), add `Match="NavLinkMatch.All"`. Otherwise leave it default (`NavLinkMatch.Prefix`) so child routes also keep the parent highlighted.
+4. Use `<li><hr class="dropdown-divider" /></li>` to visually separate groups.
+
+Example — adding a "History" page under Transportation:
+
+```razor
+<li>
+    <NavLink class="dropdown-item" href="transportation/history">
+        History
+    </NavLink>
+</li>
+```
+
+Don't forget to **also create** `Components/Pages/TransportationHistory.razor` with `@page "/transportation/history"` — otherwise the link will navigate to a 404.
+
+---
+
+## 7. Common pitfalls (and fixes)
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Dropdown does not open when clicked | `bootstrap.bundle.min.js` not loaded | Reference it in `App.razor` / `index.html`. The `.bundle` version includes Popper, which dropdowns require. |
+| Dropdown opens but child link does nothing | Used a plain `<a href>` to a non-existent route | Use `<NavLink>` and ensure a `@page "/..."` exists. |
+| Active link is not highlighted | Missing `Match="NavLinkMatch.All"` on root links, or your `::deep a.active` rule was removed | Keep the `.dropdown-menu ::deep a.active` rule in `NavMenu.razor.css`. |
+| Menu shows vertically on desktop | Using `navbar-expand` instead of `navbar-expand-md` | Use `navbar-expand-md` (or `-lg`) so it collapses **only** on small screens. |
+| Styles do not apply to `<NavLink>` | CSS isolation does not reach child components | Use the `::deep` combinator in the parent's `.razor.css`. |
+| Two menus with the same `id` | Copy-paste mistake | Each toggle anchor needs a **unique** `id`, and `aria-labelledby` on the `<ul>` must match it. |
+| A "single link" menu does nothing on click | The `<a>` has `data-bs-toggle="dropdown"` but no `<ul class="dropdown-menu">` follows it | Remove `data-bs-toggle`, `dropdown-toggle`, `aria-expanded`. Use `<NavLink class="nav-link" href="…">` instead of `<a href="#">`. See section 5.1. |
+
+---
+
+## 8. Quick mental model
+
+- `MainLayout.razor`  ?  page skeleton (where things go).
+- `NavMenu.razor`     ?  what the menu **contains** (links, dropdowns).
+- `*.razor.css`       ?  what the menu **looks like** (colors, layout).
+- Bootstrap classes (`navbar`, `nav-item dropdown`, `dropdown-toggle`, `dropdown-menu`, `dropdown-item`) ?  the **behavior** (responsive collapse, open/close on click).
+- `<NavLink>`          ?  Blazor's smart `<a>` that knows the current route and adds `active` automatically.
+
+Once you internalize these four pieces, adding a 10th menu or a 5-level deep submenu is just more of the same markup.
+
+---
+
+## 9. Recap
+
+You have learned:
+
+1. How the default Blazor sidebar layout is structured.
+2. How to convert it to a top navigation bar by editing only `MainLayout.razor` + `MainLayout.razor.css`.
+3. How to use Bootstrap 5 navbar + dropdown pattern in `NavMenu.razor`.
+4. How CSS isolation and `::deep` work for styling links inside child components.
+5. A repeatable checklist to add new **main menus** and new **submenu items** safely.
+
+Next scenario will build on top of this navigation to demonstrate the Transportation page composition (StatusInfo, EventsHistory, MessageContactHistory, ContactInformation, AnnouncementsSection).

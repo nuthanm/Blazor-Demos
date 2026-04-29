@@ -1,30 +1,101 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿<nav class="navbar navbar-expand-md navbar-dark top-navbar">
     <div class="container-fluid">
         <a class="navbar-brand" href="">ServerInteractivity</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#mainNav" aria-controls="mainNav"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="homeDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="homeDropdown">
+                        <li>
+                            <NavLink class="dropdown-item" href="" Match="NavLinkMatch.All">
+                                Dashboard
+                            </NavLink>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <NavLink class="dropdown-item" href="about">
+                                About
+                            </NavLink>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="counterDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="counterDropdown">
+                        <li>
+                            <NavLink class="dropdown-item" href="counter">
+                                Simple Counter
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="counter/advanced">
+                                Advanced Counter
+                            </NavLink>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="weatherDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="weatherDropdown">
+                        <li>
+                            <NavLink class="dropdown-item" href="weather">
+                                Forecast
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="weather/settings">
+                                Settings
+                            </NavLink>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="transportationDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Transportation
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="transportationDropdown">
+                       @*  <li>
+                            <NavLink class="dropdown-item" href="transportation" Match="NavLinkMatch.All">
+                                Overview
+                            </NavLink>
+                        </li> *@
+                        <li>
+                            <NavLink class="dropdown-item" href="transportation/events">
+                                Events
+                            </NavLink>
+                        </li>
+                    </ul>
+                </li>            
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="weather">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather Without Dropdown
+                    </NavLink>
+                </li>
+
+            </ul>
+        </div>
     </div>
-</div>
+</nav>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
 

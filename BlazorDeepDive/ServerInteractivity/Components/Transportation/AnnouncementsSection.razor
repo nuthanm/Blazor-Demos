@@ -1,0 +1,148 @@
+@using ServerInteractivity.Components.Transportation
+
+@*
+    Web Forms equivalent (Announcements.ascx):
+        <asp:Panel runat="server" ID="pnlAnnouncements">
+            <asp:Label Text="Announcements" runat="server" />
+            <asp:TextBox ID="txtAnnouncement" runat="server" />
+            <asp:TextBox ID="txtDate" TextMode="Date" runat="server" />
+            <asp:Button ID="btnSave" runat="server" Text="Add"
+                        OnClick="btnSave_Click" />
+            <asp:GridView runat="server"
+                          OnRowCommand="gv_RowCommand">
+                <Columns>
+                    <asp:TemplateField>
+                        <ItemTemplate>
+                            <asp:LinkButton runat="server" CommandName="EditRow"  ... />
+                            <asp:LinkButton runat="server" CommandName="RemoveRow" ... />
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                </Columns>
+            </asp:GridView>
+        </asp:Panel>
+*@
+
+<div class="card mb-3">
+    <div class="card-header">Announcements</div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Announcement</label>
+                <input class="form-control" @bind="_draft.Text" placeholder="Type announcement text..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" @bind="_draft.Date" />
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                @* asp:Button - text toggles between Add and Update *@
+                <button type="button" class="btn btn-primary" @onclick="SaveAsync" disabled="@string.IsNullOrWhiteSpace(_draft.Text)">
+                    @(_isEditing ? "Update" : "Add")
+                </button>
+                @if (_isEditing)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">
+                        Cancel
+                    </button>
+                }
+            </div>
+        </div>
+
+        <hr />
+
+        @if (Items is null || Items.Count == 0)
+        {
+            <p class="text-muted mb-0">No announcements yet.</p>
+        }
+        else
+        {
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Text</th>
+                        <th>Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Items)
+                    {
+                        <tr class="@(_draft.Id == a.Id && _isEditing ? "table-active" : string.Empty)">
+                            <td>@a.Id</td>
+                            <td>@a.Text</td>
+                            <td>@a.Date.ToString("d")</td>
+                            <td class="text-end">
+                                @* asp:LinkButton CommandName="EditRow" *@
+                                <button type="button" class="btn btn-link p-0 me-3"
+                                        @onclick="() => BeginEdit(a)">
+                                    Edit
+                                </button>
+                                @* asp:LinkButton CommandName="RemoveRow" *@
+                                <button type="button" class="btn btn-link p-0 text-danger"
+                                        @onclick="() => RemoveAsync(a)">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<Announcement>? Items { get; set; }
+
+    // Bubbled to parent so it can persist via repository (e.g. Oracle).
+    [Parameter] public EventCallback<Announcement> OnAdd { get; set; }
+    [Parameter] public EventCallback<Announcement> OnUpdate { get; set; }
+    [Parameter] public EventCallback<Announcement> OnRemove { get; set; }
+
+    private Announcement _draft = new();
+    private bool _isEditing;
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_draft.Text))
+        {
+            return;
+        }
+
+        if (_isEditing)
+        {
+            await OnUpdate.InvokeAsync(_draft);
+        }
+        else
+        {
+            await OnAdd.InvokeAsync(_draft);
+        }
+
+        ResetForm();
+    }
+
+    private void BeginEdit(Announcement a)
+    {
+        // Copy so editing the form doesn't mutate the row until the user clicks Update.
+        _draft = new Announcement { Id = a.Id, Text = a.Text, Date = a.Date };
+        _isEditing = true;
+    }
+
+    private void CancelEdit() => ResetForm();
+
+    private Task RemoveAsync(Announcement a)
+    {
+        if (_isEditing && _draft.Id == a.Id)
+        {
+            ResetForm();
+        }
+        return OnRemove.InvokeAsync(a);
+    }
+
+    private void ResetForm()
+    {
+        _draft = new Announcement();
+        _isEditing = false;
+    }
+}
