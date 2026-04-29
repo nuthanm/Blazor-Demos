@@ -1,0 +1,72 @@
+﻿<div class="application-history-box">
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Update Date</th>
+                <th>Status</th>
+                <th>Updated By</th>
+                <th>Events Date</th>
+                <th>School Year</th>
+                <th>Status Date</th>
+                <th>Cert Comment</th>
+                <th>Certifications</th>
+                <th>If Manager Comments</th>
+                <th>Admin Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @* ✅ FIX: Check for null AND empty before looping *@
+            @if (HistoryItems != null && HistoryItems.Any())
+            {
+                @foreach (var item in HistoryItems)
+                {
+                    <tr>
+                        <td>@item.UpdateDate</td>
+                        <td>@item.Status</td>
+                        <td>@item.UpdatedBy</td>
+                        <td>@item.EventsDate</td>
+                        <td>@item.SchoolYear</td>
+                        <td>@item.StatusDate</td>
+                        <td>@item.CertComment</td>
+                        <td>@item.Certifications</td>
+                        <td>@item.IfManagerComments</td>
+                        <td>@item.AdminComments</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="10" class="text-center text-muted">
+                        No history available.
+                    </td>
+                </tr>
+            }
+
+        </tbody>
+    </table>
+
+    <button class="btn btn-secondary mt-2" @onclick="HandleClose">
+        Close
+    </button>
+
+</div>
+
+@code {
+
+    // ✅ FIX: Default to new empty list — avoids null reference crash
+    [Parameter]
+    public List<EventHistoryModel> HistoryItems { get; set; } = new List<EventHistoryModel>();
+
+    // ✅ Use EventCallback so parent can await the close action
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private async Task HandleClose()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+}

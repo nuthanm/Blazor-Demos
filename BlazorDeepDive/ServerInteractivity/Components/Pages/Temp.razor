@@ -1,0 +1,65 @@
+﻿@page "/temp"
+@using ServerInteractivity.Components.Transportation
+@rendermode InteractiveServer
+
+<button class="btn-primary" @onclick="ShowHistory">
+    Show History
+</button>
+
+@* <span>@lbl</span> *@
+
+@* 
+@foreach(var item in historyList)
+{
+    <div>
+        <p>@item.UpdateDate - @item.Status - @item.UpdatedBy</p>
+    </div>
+} *@
+
+@if (showHistory)
+{
+    <Child HistoryItems="historyList" OnClose="HideHistory"></Child>
+}
+
+@code {
+
+    private bool showHistory = false;
+    private List<EventHistoryModel> historyList = new List<EventHistoryModel>();
+
+    // ─── Show History ─────────────────────────────────────────
+    private void ShowHistory()
+    {
+        // ✅ FIX 1 (ROOT CAUSE): Was "showHistory = false" — must be TRUE
+        // ✅ FIX 2: Populate list HERE before showing the panel
+
+        historyList = new List<EventHistoryModel>
+        {
+            new EventHistoryModel
+            {
+                UpdateDate        = "04/28/2025",
+                Status            = "New",
+                UpdatedBy         = "Admin",
+                EventsDate        = "04/01/2025",
+                SchoolYear        = "2024-2025",
+                StatusDate        = "Event Start",
+                CertComment       = "Confirmed",
+                Certifications    = "Yes",
+                IfManagerComments = "Confirmed",
+                AdminComments     = "Approved"
+            }
+            // Add more records here as needed
+        };
+
+        showHistory = true;          // ✅ Was FALSE — this was the main bug
+        StateHasChanged();           // ✅ FIX 3: Force Blazor to re-render
+    }
+
+    // ─── Hide History ─────────────────────────────────────────
+    private void HideHistory()
+    {
+        showHistory = false;
+        StateHasChanged();           // ✅ Force re-render on close too
+    }
+
+
+}

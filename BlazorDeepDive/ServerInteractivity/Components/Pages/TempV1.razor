@@ -1,0 +1,43 @@
+﻿@page "/tempv1"
+@using ServerInteractivity.Components.Transportation
+@rendermode InteractiveServer
+
+<button class="btn btn-primary" @onclick="showHistory">
+    Show History
+</button>
+
+@if(_showHistory)
+{
+    <ChildV1 HistoryItems="historyModels" OnClose="HideHistory"></ChildV1>
+}
+
+@code {
+    bool _showHistory = false;
+
+    List<EventHistoryModel> historyModels = new()
+    {
+        new EventHistoryModel
+        {
+            UpdateDate = "04/28/2025",
+            Status = "New",
+            UpdatedBy = "Admin",
+            EventsDate = "04/01/2025",
+            SchoolYear = "2024-2025",
+            StatusDate = "Event Start",
+            CertComment = "Confirmed",
+            Certifications = "Yes",
+            IfManagerComments = "Confirmed",
+            AdminComments = "Approved"
+        }
+    };
+
+    void showHistory()
+    {
+        _showHistory = true;
+    }
+
+    void HideHistory()
+    {
+        _showHistory = false;
+    }
+}

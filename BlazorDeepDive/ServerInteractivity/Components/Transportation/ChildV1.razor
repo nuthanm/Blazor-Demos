@@ -1,0 +1,30 @@
+﻿@using ServerInteractivity.Components.Transportation
+
+@if (HistoryItems.Any() == true)
+{
+    @foreach (var item in HistoryItems)
+    {
+        <div>
+            <p>@item.UpdateDate - @item.Status - @item.UpdatedBy</p>
+        </div>
+    }
+}
+
+<button class="btn btn-secondary mt-2" @onclick="HandleClose">
+    Close
+</button>
+
+@code {
+
+    [Parameter]
+    public List<EventHistoryModel> HistoryItems { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    void HandleClose()
+    {
+        OnClose.InvokeAsync(null);
+    }
+
+}
